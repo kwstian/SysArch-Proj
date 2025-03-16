@@ -156,12 +156,9 @@
                 <label for="lab">Lab:</label>
                 <select id="lab" name="lab" class="form-control" required>
                     <option value="">Select Laboratory</option>
-                    {% set conn = get_db_connection() %}
-                    {% set labs = conn.execute('SELECT * FROM laboratories').fetchall() %}
-                    {% for lab in labs %}
+                    {% for lab in laboratories %}
                     <option value="{{ lab.id }}">{{ lab.name }}</option>
                     {% endfor %}
-                    {{ conn.close() }}
                 </select>
             </div>
             <div class="form-group">
