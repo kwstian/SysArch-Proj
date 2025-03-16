@@ -40,7 +40,7 @@
                                     {% for program in programs %}
                                     <option value="{{ program.program }}">{{ program.program }}</option>
                                     {% endfor %}
-                                    {% if conn %}{% do conn.close() %}{% endif %}
+                                    {{ conn.close() }}
                                 </select>
                             </div>
                         </div>
@@ -131,7 +131,7 @@
                             {% else %}
                                 <li>No recent activity</li>
                             {% endif %}
-                            {% if conn %}{% do conn.close() %}{% endif %}
+                            {{ conn.close() }}
                         </ul>
                     </div>
                 </div>
@@ -167,7 +167,7 @@
                     {% for lab in labs %}
                     <option value="{{ lab.id }}">{{ lab.name }}</option>
                     {% endfor %}
-                    {% if conn %}{% do conn.close() %}{% endif %}
+                    {{ conn.close() }}
                 </select>
             </div>
             <div class="form-group">

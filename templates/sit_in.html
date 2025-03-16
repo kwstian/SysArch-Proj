@@ -10,15 +10,9 @@
                 <i data-feather="user-plus"></i> Student Sit-In
             </div>
             <div class="card-body">
-                <form action="{{ url_for('search') }}" method="post" id="student-search-form">
-                    <div class="form-group">
-                        <label for="student-id-input">Search Student</label>
-                        <div style="display: flex;">
-                            <input type="text" id="student-id-input" name="student_id" class="form-control" placeholder="Enter Student ID">
-                            <button type="submit" class="btn btn-primary" style="margin-left: 10px;">Search</button>
-                        </div>
-                    </div>
-                </form>
+                <!-- Search functionality moved to search page -->
+                
+                <h5><i data-feather="info" style="width: 18px; height: 18px;"></i> Tip: To search for students, use the Search option in the navigation menu.</h5>
                 
                 <hr>
                 
@@ -189,8 +183,8 @@
             }
         });
         
-        // Focus search input
-        document.getElementById('student-id-input').focus();
+        // Focus student ID input
+        document.getElementById('student_id').focus();
         
         // Handle checkout button clicks
         const checkoutButtons = document.querySelectorAll('.checkout-btn');
