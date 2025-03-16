@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Sit-In - CCS Admin{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header">
+                <i data-feather="user-plus"></i> Student Sit-In
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('search') }}" method="post" id="student-search-form">
+                    <div class="form-group">
+                        <label for="student-id-input">Search Student</label>
+                        <div style="display: flex;">
+                            <input type="text" id="student-id-input" name="student_id" class="form-control" placeholder="Enter Student ID">
+                            <button type="submit" class="btn btn-primary" style="margin-left: 10px;">Search</button>
+                        </div>
+                    </div>
+                </form>
+                
+                <hr>
+                
+                <form action="{{ url_for('sit_in') }}" method="post" id="sit-in-form">
+                    <h4>Sit In Form</h4>
+                    
+                    <div class="form-group">
+                        <label for="student_id">ID Number:</label>
+                        <input type="text" id="student_id" name="student_id" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="student_name">Student Name:</label>
+                        <input type="text" id="student_name" name="student_name" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="purpose">Purpose:</label>
+                        <select id="purpose" name="purpose" class="form-control" required>
+                            <option value="">Select Purpose</option>
+                            <option value="C Programming">C Programming</option>
+                            <option value="C# Programming">C# Programming</option>
+                            <option value="Java Programming">Java Programming</option>
+                            <option value="Php Programming">Php Programming</option>
+                            <option value="ASP.Net Programming">ASP.Net Programming</option>
+                            <option value="Database Management">Database Management</option>
+                            <option value="Web Development">Web Development</option>
+                            <option value="Network Administration">Network Administration</option>
+                            <option value="Mobile Development">Mobile Development</option>
+                            <option value="Research">Research</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="lab">Lab:</label>
+                        <select id="lab" name="lab" class="form-control" required>
+                            <option value="">Select Laboratory</option>
+                            {% if laboratories %}
+                                {% for lab in laboratories %}
+                                <option value="{{ lab.id }}">{{ lab.name }}</option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="remaining_session">Remaining Session (minutes):</label>
+                        <input type="number" id="remaining_session" name="remaining_session" class="form-control" value="25" min="1" max="180">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Sit In</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header">
+                <i data-feather="users"></i> Current Sit in
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="current-sitin-table">
+                        <thead>
+                            <tr>
+                                <th>Sit ID Number</th>
+                                <th>ID Number</th>
+                                <th>Name</th>
+                                <th>Purpose</th>
+                                <th>Sit Lab</th>
+                                <th>Session</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if current_sit_ins %}
+                                {% for sit_in in current_sit_ins %}
+                                <tr>
+                                    <td>{{ sit_in.id }}</td>
+                                    <td>{{ sit_in.student_id }}</td>
+                                    <td>{{ sit_in.name }}</td>
+                                    <td>{{ sit_in.purpose }}</td>
+                                    <td>{{ sit_in.lab_id }}</td>
+                                    <td>{{ sit_in.session_remaining }} min</td>
+                                    <td>
+                                        {% if sit_in.status == 'active' %}
+                                        <span class="badge" style="background-color: #4CAF50; color: white; padding: 5px 10px; border-radius: 4px;">Active</span>
+                                        {% else %}
+                                        <span class="badge" style="background-color: #9E9E9E; color: white; padding: 5px 10px; border-radius: 4px;">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if sit_in.status == 'active' %}
+                                        <a href="{{ url_for('checkout', sit_in_id=sit_in.id) }}" class="btn btn-danger btn-sm checkout-btn" data-href="{{ url_for('checkout', sit_in_id=sit_in.id) }}">
+                                            <i data-feather="log-out" style="width: 14px; height: 14px;"></i> Logout
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="8" class="text-center">No data available</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <select id="entries-per-page" class="form-control" style="width: auto; display: inline-block;">
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                        <span>entries per page</span>
+                    </div>
+                    
+                    <div>
+                        <input type="text" id="table-search" class="form-control" placeholder="Search" style="width: 200px;">
+                    </div>
+                </div>
+                
+                <div style="margin-top: 10px;">
+                    <p>Showing 1 to 
+                        {% if current_sit_ins %}
+                            {{ current_sit_ins|length }}
+                        {% else %}
+                            0
+                        {% endif %} 
+                        of 
+                        {% if current_sit_ins %}
+                            {{ current_sit_ins|length }}
+                        {% else %}
+                            0
+                        {% endif %} 
+                        entries
+                    </p>
+                    
+                    <div class="pagination">
+                        <button disabled class="btn btn-sm" style="margin-right: 5px; background-color: #f1f1f1;">&lt;</button>
+                        <button class="btn btn-sm" style="margin-right: 5px; background-color: #004080; color: white;">1</button>
+                        <button disabled class="btn btn-sm" style="background-color: #f1f1f1;">&gt;</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize DataTable
+        $('#current-sitin-table').DataTable({
+            "pageLength": 10,
+            "lengthMenu": [10, 25, 50, 100],
+            "order": [[0, "desc"]],
+            "searching": true,
+            "responsive": true,
+            "language": {
+                "emptyTable": "No data available"
+            }
+        });
+        
+        // Focus search input
+        document.getElementById('student-id-input').focus();
+        
+        // Handle checkout button clicks
+        const checkoutButtons = document.querySelectorAll('.checkout-btn');
+        checkoutButtons.forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.preventDefault();
+                if (confirm('Are you sure you want to check out this student?')) {
+                    window.location.href = this.getAttribute('data-href');
+                }
+            });
+        });
+        
+        // Entries per page change
+        document.getElementById('entries-per-page').addEventListener('change', function() {
+            $('#current-sitin-table').DataTable().page.len(parseInt(this.value)).draw();
+        });
+        
+        // Table search
+        document.getElementById('table-search').addEventListener('keyup', function() {
+            $('#current-sitin-table').DataTable().search(this.value).draw();
+        });
+    });
+</script>
+{% endblock %}

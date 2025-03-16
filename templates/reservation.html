@@ -1,0 +1,428 @@
+{% extends "base.html" %}
+
+{% block title %}Reservation - CCS Admin{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <i data-feather="calendar"></i> Laboratory Reservation
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-5">
+                <div class="card" style="box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                    <div class="card-header" style="background-color: #f4f7fa;">
+                        <h4 style="margin: 0; color: #004080;">Reservation Form</h4>
+                    </div>
+                    <div class="card-body">
+                        <form action="{{ url_for('reservation') }}" method="post" id="reservation-form">
+                            <div class="form-group">
+                                <label for="student_id">Student ID:</label>
+                                <input type="text" id="student_id" name="student_id" class="form-control" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="student_name">Student Name:</label>
+                                <input type="text" id="student_name" name="student_name" class="form-control" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="purpose">Purpose:</label>
+                                <select id="purpose" name="purpose" class="form-control" required>
+                                    <option value="">Select Purpose</option>
+                                    <option value="C Programming">C Programming</option>
+                                    <option value="C# Programming">C# Programming</option>
+                                    <option value="Java Programming">Java Programming</option>
+                                    <option value="Php Programming">Php Programming</option>
+                                    <option value="ASP.Net Programming">ASP.Net Programming</option>
+                                    <option value="Database Management">Database Management</option>
+                                    <option value="Web Development">Web Development</option>
+                                    <option value="Network Administration">Network Administration</option>
+                                    <option value="Mobile Development">Mobile Development</option>
+                                    <option value="Research">Research</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="lab_id">Laboratory:</label>
+                                <select id="lab_id" name="lab_id" class="form-control" required>
+                                    <option value="">Select Laboratory</option>
+                                    {% for lab in laboratories %}
+                                    <option value="{{ lab.id }}">{{ lab.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="date">Date:</label>
+                                <input type="date" id="date" name="date" class="form-control" required min="{{ now_date }}">
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="start_time">Start Time:</label>
+                                        <input type="time" id="start_time" name="start_time" class="form-control" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="end_time">End Time:</label>
+                                        <input type="time" id="end_time" name="end_time" class="form-control" required>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">Submit Reservation</button>
+                                <button type="reset" class="btn btn-secondary">Reset</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="card" style="margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                    <div class="card-header" style="background-color: #f4f7fa;">
+                        <h4 style="margin: 0; color: #004080;">Laboratory Schedules</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="schedule_lab">Select Laboratory:</label>
+                            <select id="schedule_lab" class="form-control">
+                                <option value="all">All Laboratories</option>
+                                {% for lab in laboratories %}
+                                <option value="{{ lab.id }}">{{ lab.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="schedule_date">Date:</label>
+                            <input type="date" id="schedule_date" class="form-control" value="{{ now_date }}">
+                        </div>
+                        
+                        <div id="schedule-info" style="margin-top: 15px;">
+                            <p><strong>Available Hours:</strong></p>
+                            <ul style="padding-left: 20px;">
+                                <li>Morning: 8:00 AM - 12:00 PM</li>
+                                <li>Afternoon: 1:00 PM - 5:00 PM</li>
+                                <li>Evening: 6:00 PM - 9:00 PM (if applicable)</li>
+                            </ul>
+                            <p class="text-info">Note: Please check for any existing reservations before scheduling.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-7">
+                <div class="card" style="box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                    <div class="card-header" style="background-color: #f4f7fa;">
+                        <h4 style="margin: 0; color: #004080;">Existing Reservations</h4>
+                    </div>
+                    <div class="card-body">
+                        <div style="margin-bottom: 15px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <select id="entries-per-page" class="form-control" style="width: auto; display: inline-block;">
+                                        <option value="10">10</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                    </select>
+                                    <span>entries per page</span>
+                                </div>
+                                
+                                <div style="display: flex;">
+                                    <select id="filter-status" class="form-control" style="width: auto; margin-right: 10px;">
+                                        <option value="all">All Status</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="approved">Approved</option>
+                                        <option value="rejected">Rejected</option>
+                                        <option value="completed">Completed</option>
+                                    </select>
+                                    <input type="text" id="reservation-search" class="form-control" placeholder="Search" style="width: 150px;">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-striped" id="reservations-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Student</th>
+                                        <th>Purpose</th>
+                                        <th>Laboratory</th>
+                                        <th>Date</th>
+                                        <th>Time</th>
+                                        <th>Status</th>
+                                        {% if session.user_role == 'admin' %}
+                                        <th>Actions</th>
+                                        {% endif %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if reservations %}
+                                        {% for reservation in reservations %}
+                                        <tr>
+                                            <td>{{ reservation.id }}</td>
+                                            <td>{{ reservation.name }}</td>
+                                            <td>{{ reservation.purpose }}</td>
+                                            <td>{{ reservation.lab_name }}</td>
+                                            <td>{{ reservation.date }}</td>
+                                            <td>{{ reservation.start_time }} - {{ reservation.end_time }}</td>
+                                            <td>
+                                                {% if reservation.status == 'pending' %}
+                                                <span class="badge" style="background-color: #FFC107; color: #333; padding: 5px 10px; border-radius: 4px;">Pending</span>
+                                                {% elif reservation.status == 'approved' %}
+                                                <span class="badge" style="background-color: #28A745; color: white; padding: 5px 10px; border-radius: 4px;">Approved</span>
+                                                {% elif reservation.status == 'rejected' %}
+                                                <span class="badge" style="background-color: #DC3545; color: white; padding: 5px 10px; border-radius: 4px;">Rejected</span>
+                                                {% elif reservation.status == 'completed' %}
+                                                <span class="badge" style="background-color: #6C757D; color: white; padding: 5px 10px; border-radius: 4px;">Completed</span>
+                                                {% endif %}
+                                            </td>
+                                            {% if session.user_role == 'admin' %}
+                                            <td>
+                                                <div class="dropdown">
+                                                    <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                        Action
+                                                    </button>
+                                                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                                        {% if reservation.status == 'pending' %}
+                                                        <a class="dropdown-item" href="{{ url_for('update_reservation_status', reservation_id=reservation.id, status='approved') }}">Approve</a>
+                                                        <a class="dropdown-item" href="{{ url_for('update_reservation_status', reservation_id=reservation.id, status='rejected') }}">Reject</a>
+                                                        {% elif reservation.status == 'approved' %}
+                                                        <a class="dropdown-item" href="{{ url_for('update_reservation_status', reservation_id=reservation.id, status='completed') }}">Mark as Completed</a>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            {% endif %}
+                                        </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="{% if session.user_role == 'admin' %}8{% else %}7{% endif %}" class="text-center">No reservations found</td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span>Showing 1 to 
+                                    {% if reservations %}
+                                        {{ reservations|length if reservations|length < 10 else 10 }}
+                                    {% else %}
+                                        0
+                                    {% endif %} 
+                                    of 
+                                    {% if reservations %}
+                                        {{ reservations|length }}
+                                    {% else %}
+                                        0
+                                    {% endif %} 
+                                    entries
+                                </span>
+                            </div>
+                            
+                            <div class="pagination">
+                                {% if reservations and reservations|length > 10 %}
+                                <button class="btn btn-sm" style="margin-right: 5px; background-color: #f1f1f1;">&lt;</button>
+                                <button class="btn btn-sm" style="margin-right: 5px; background-color: #004080; color: white;">1</button>
+                                <button class="btn btn-sm" style="margin-right: 5px; background-color: #f1f1f1;">2</button>
+                                <button class="btn btn-sm" style="background-color: #f1f1f1;">&gt;</button>
+                                {% else %}
+                                <button disabled class="btn btn-sm" style="margin-right: 5px; background-color: #f1f1f1;">&lt;</button>
+                                <button class="btn btn-sm" style="margin-right: 5px; background-color: #004080; color: white;">1</button>
+                                <button disabled class="btn btn-sm" style="background-color: #f1f1f1;">&gt;</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Lab Usage Calendar (Future Enhancement) -->
+                <div class="card" style="margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                    <div class="card-header" style="background-color: #f4f7fa;">
+                        <h4 style="margin: 0; color: #004080;">Reservation Guidelines</h4>
+                    </div>
+                    <div class="card-body">
+                        <ol>
+                            <li>Reservations must be made at least 24 hours in advance.</li>
+                            <li>Maximum reservation duration is 3 hours per session.</li>
+                            <li>Students can only have up to 3 active reservations at a time.</li>
+                            <li>Reservations are subject to approval by laboratory administrators.</li>
+                            <li>If you cannot make it to your reserved time, please cancel your reservation as early as possible.</li>
+                            <li>Priority is given to class-related activities and academic requirements.</li>
+                            <li>Always check the laboratory schedule before making a reservation.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Modal -->
+<div id="action-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h3 id="action-title">Reservation Action</h3>
+        <p id="action-message">Are you sure you want to perform this action?</p>
+        <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+            <button class="btn btn-secondary" onclick="document.getElementById('action-modal').style.display='none'">Cancel</button>
+            <a href="#" id="confirm-action-btn" class="btn btn-primary">Confirm</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set minimum date to today
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${yyyy}-${mm}-${dd}`;
+        
+        document.getElementById('date').min = todayStr;
+        document.getElementById('schedule_date').value = todayStr;
+        
+        // Initialize DataTable
+        $('#reservations-table').DataTable({
+            "pageLength": 10,
+            "lengthMenu": [10, 25, 50, 100],
+            "order": [[4, "asc"], [5, "asc"]], // Order by date, then time
+            "searching": true,
+            "responsive": true,
+            "language": {
+                "emptyTable": "No reservations found"
+            }
+        });
+        
+        // Search functionality
+        document.getElementById('reservation-search').addEventListener('keyup', function() {
+            $('#reservations-table').DataTable().search(this.value).draw();
+        });
+        
+        // Entries per page change
+        document.getElementById('entries-per-page').addEventListener('change', function() {
+            $('#reservations-table').DataTable().page.len(parseInt(this.value)).draw();
+        });
+        
+        // Filter by status
+        document.getElementById('filter-status').addEventListener('change', function() {
+            const status = this.value;
+            
+            if (status === 'all') {
+                $('#reservations-table').DataTable().column(6).search('').draw();
+            } else {
+                $('#reservations-table').DataTable().column(6).search(status).draw();
+            }
+        });
+        
+        // Form validation for start/end time
+        document.getElementById('reservation-form').addEventListener('submit', function(event) {
+            const startTime = document.getElementById('start_time').value;
+            const endTime = document.getElementById('end_time').value;
+            
+            if (startTime >= endTime) {
+                event.preventDefault();
+                alert('End time must be after start time');
+                return false;
+            }
+            
+            // Check if duration is within limits (max 3 hours)
+            const startMinutes = timeToMinutes(startTime);
+            const endMinutes = timeToMinutes(endTime);
+            const durationMinutes = endMinutes - startMinutes;
+            
+            if (durationMinutes > 180) { // 3 hours = 180 minutes
+                event.preventDefault();
+                alert('Maximum reservation duration is 3 hours');
+                return false;
+            }
+        });
+        
+        // Time to minutes conversion helper
+        function timeToMinutes(timeStr) {
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return hours * 60 + minutes;
+        }
+        
+        // Student lookup on ID entry
+        document.getElementById('student_id').addEventListener('blur', function() {
+            const studentId = this.value.trim();
+            if (!studentId) return;
+            
+            // Simulate student lookup - in a real app, this would be an AJAX call
+            fetch(`/student/${studentId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Student not found');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('student_name').value = data.name;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // Leave the name field empty for manual entry if student not found
+                });
+        });
+        
+        // Action confirmation
+        const dropdownItems = document.querySelectorAll('.dropdown-item');
+        dropdownItems.forEach(item => {
+            item.addEventListener('click', function(event) {
+                event.preventDefault();
+                const action = this.innerText.toLowerCase();
+                const actionUrl = this.getAttribute('href');
+                
+                document.getElementById('action-title').innerText = `${action} Reservation`;
+                document.getElementById('action-message').innerText = `Are you sure you want to ${action} this reservation?`;
+                document.getElementById('confirm-action-btn').href = actionUrl;
+                document.getElementById('action-modal').style.display = 'block';
+            });
+        });
+        
+        // Initialize dropdown toggle manually (since we're not using Bootstrap JS)
+        const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+        dropdownToggles.forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const dropdownMenu = this.nextElementSibling;
+                dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
+                
+                // Position the dropdown menu
+                dropdownMenu.style.position = 'absolute';
+                dropdownMenu.style.left = '0';
+                dropdownMenu.style.top = this.offsetHeight + 'px';
+                dropdownMenu.style.minWidth = '160px';
+                dropdownMenu.style.padding = '5px 0';
+                dropdownMenu.style.margin = '2px 0 0';
+                dropdownMenu.style.fontSize = '1rem';
+                dropdownMenu.style.backgroundColor = '#fff';
+                dropdownMenu.style.border = '1px solid rgba(0,0,0,.15)';
+                dropdownMenu.style.borderRadius = '.25rem';
+                dropdownMenu.style.zIndex = '1000';
+            });
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!event.target.matches('.dropdown-toggle')) {
+                const dropdowns = document.querySelectorAll('.dropdown-menu');
+                dropdowns.forEach(dropdown => {
+                    dropdown.style.display = 'none';
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

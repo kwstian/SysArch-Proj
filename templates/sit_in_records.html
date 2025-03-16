@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Sit-In Records - CCS Admin{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <i data-feather="file-text"></i> Current Sit-in Records
+    </div>
+    <div class="card-body">
+        <!-- Filter Form -->
+        <form action="{{ url_for('sit_in_records') }}" method="get" class="filter-form" style="margin-bottom: 20px;">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="date">Date:</label>
+                        <input type="date" id="date" name="date" class="form-control" value="{{ date_filter }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="lab">Laboratory:</label>
+                        <select id="lab" name="lab" class="form-control">
+                            <option value="all" {% if lab_filter == 'all' %}selected{% endif %}>All Laboratories</option>
+                            {% for lab in laboratories %}
+                            <option value="{{ lab.id }}" {% if lab_filter == lab.id|string %}selected{% endif %}>{{ lab.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="purpose">Purpose:</label>
+                        <select id="purpose" name="purpose" class="form-control">
+                            <option value="all" {% if purpose_filter == 'all' %}selected{% endif %}>All Purposes</option>
+                            <option value="C" {% if purpose_filter == 'C' %}selected{% endif %}>C Programming</option>
+                            <option value="C#" {% if purpose_filter == 'C#' %}selected{% endif %}>C# Programming</option>
+                            <option value="Java" {% if purpose_filter == 'Java' %}selected{% endif %}>Java Programming</option>
+                            <option value="Php" {% if purpose_filter == 'Php' %}selected{% endif %}>Php Programming</option>
+                            <option value="ASP.Net" {% if purpose_filter == 'ASP.Net' %}selected{% endif %}>ASP.Net Programming</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <button type="submit" class="btn btn-primary form-control">Apply Filters</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        
+        <!-- Charts -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="programmingChart"></canvas>
+                </div>
+                <!-- Hidden elements to store chart data -->
+                <div id="prog-labels" style="display: none;">{{ prog_labels | safe }}</div>
+                <div id="prog-counts" style="display: none;">{{ prog_counts | safe }}</div>
+            </div>
+            <div class="col-md-6">
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="labUsageChart"></canvas>
+                </div>
+                <!-- Hidden elements to store chart data -->
+                <div id="lab-labels" style="display: none;">{{ lab_labels | safe }}</div>
+                <div id="lab-counts" style="display: none;">{{ lab_counts | safe }}</div>
+            </div>
+        </div>
+        
+        <!-- Records Table -->
+        <div class="table-responsive" style="margin-top: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div>
+                    <select id="entries-per-page" class="form-control" style="width: auto; display: inline-block;">
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                    <span>entries per page</span>
+                </div>
+                
+                <div>
+                    <input type="text" id="table-search" class="form-control" placeholder="Search" style="width: 200px;">
+                </div>
+            </div>
+            
+            <table class="table table-striped" id="records-table">
+                <thead>
+                    <tr>
+                        <th>Sit-in Number</th>
+                        <th>ID Number</th>
+                        <th>Name</th>
+                        <th>Purpose</th>
+                        <th>Lab</th>
+                        <th>Login</th>
+                        <th>Logout</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if records %}
+                        {% for record in records %}
+                        <tr>
+                            <td>{{ record.id }}</td>
+                            <td>{{ record.student_id }}</td>
+                            <td>{{ record.name }}</td>
+                            <td>{{ record.purpose }}</td>
+                            <td>{{ record.lab_name }}</td>
+                            <td>{{ record.login_time.split()[1][:5] }}</td>
+                            <td>
+                                {% if record.logout_time %}
+                                    {{ record.logout_time.split()[1][:5] }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ record.login_time.split()[0] }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize DataTable
+        $('#records-table').DataTable({
+            "pageLength": 10,
+            "lengthMenu": [10, 25, 50, 100],
+            "order": [[5, "desc"]], // Order by login time
+            "searching": true,
+            "responsive": true,
+            "language": {
+                "emptyTable": "No records found for the selected date"
+            }
+        });
+        
+        // Initialize charts
+        initProgrammingChart();
+        initLabUsageChart();
+        
+        // Entries per page change
+        document.getElementById('entries-per-page').addEventListener('change', function() {
+            $('#records-table').DataTable().page.len(parseInt(this.value)).draw();
+        });
+        
+        // Table search
+        document.getElementById('table-search').addEventListener('keyup', function() {
+            $('#records-table').DataTable().search(this.value).draw();
+        });
+        
+        // Date filter change - auto submit form
+        document.getElementById('date').addEventListener('change', function() {
+            document.querySelector('.filter-form').submit();
+        });
+        
+        // Lab filter change - auto submit form
+        document.getElementById('lab').addEventListener('change', function() {
+            document.querySelector('.filter-form').submit();
+        });
+        
+        // Purpose filter change - auto submit form
+        document.getElementById('purpose').addEventListener('change', function() {
+            document.querySelector('.filter-form').submit();
+        });
+    });
+</script>
+{% endblock %}

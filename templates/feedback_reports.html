@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Feedback Reports - CCS Admin{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <i data-feather="message-square"></i> Feedback Report
+    </div>
+    <div class="card-body">
+        <!-- Filter Form -->
+        <form action="{{ url_for('feedback_reports') }}" method="get" class="filter-form" style="margin-bottom: 20px;">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="lab">Laboratory:</label>
+                        <select id="lab" name="lab" class="form-control">
+                            <option value="all" {% if lab_filter == 'all' %}selected{% endif %}>All Laboratories</option>
+                            {% for lab in laboratories %}
+                            <option value="{{ lab.id }}" {% if lab_filter == lab.id|string %}selected{% endif %}>{{ lab.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="date">Date:</label>
+                        <input type="date" id="date" name="date" class="form-control" value="{{ date_filter if date_filter != 'all' else '' }}">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <div style="display: flex; gap: 5px;">
+                            <button type="submit" class="btn btn-primary form-control">Apply Filters</button>
+                            <button type="button" class="btn btn-secondary form-control" onclick="window.location='{{ url_for('feedback_reports') }}'">Reset</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+        
+        <!-- Add Feedback Button -->
+        <button class="btn btn-success" style="margin-bottom: 20px;" data-toggle="modal" data-target="#add-feedback-modal">
+            <i data-feather="plus"></i> Add Feedback
+        </button>
+        
+        <!-- Print Button -->
+        <button class="btn btn-secondary" style="margin-bottom: 20px;" onclick="window.print()">
+            <i data-feather="printer"></i> Print
+        </button>
+        
+        <!-- Filter input -->
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center;">
+                <label style="margin-right: 10px;">Filter:</label>
+                <input type="text" id="table-search" class="form-control" style="width: 200px;">
+            </div>
+        </div>
+        
+        <!-- Feedback Table -->
+        <div class="table-responsive">
+            <table class="table table-striped" id="feedback-table">
+                <thead>
+                    <tr>
+                        <th>Student ID Number</th>
+                        <th>Laboratory</th>
+                        <th>Date</th>
+                        <th>Message</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if feedbacks %}
+                        {% for feedback in feedbacks %}
+                        <tr>
+                            <td>{{ feedback.student_id }}</td>
+                            <td>{{ feedback.lab_name }}</td>
+                            <td>{{ feedback.date_submitted.split()[0] }}</td>
+                            <td>{{ feedback.message }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <span>Showing 1 to 
+                    {% if feedbacks %}
+                        {{ feedbacks|length if feedbacks|length < 10 else 10 }}
+                    {% else %}
+                        0
+                    {% endif %} 
+                    of 
+                    {% if feedbacks %}
+                        {{ feedbacks|length }}
+                    {% else %}
+                        0
+                    {% endif %} 
+                    entries
+                </span>
+            </div>
+            
+            <div class="pagination">
+                {% if feedbacks and feedbacks|length > 10 %}
+                <button class="btn btn-sm" style="margin-right: 5px; background-color: #f1f1f1;">&lt;</button>
+                <button class="btn btn-sm" style="margin-right: 5px; background-color: #004080; color: white;">1</button>
+                <button class="btn btn-sm" style="margin-right: 5px; background-color: #f1f1f1;">2</button>
+                <button class="btn btn-sm" style="margin-right: 5px; background-color: #f1f1f1;">3</button>
+                <button class="btn btn-sm" style="background-color: #f1f1f1;">&gt;</button>
+                {% else %}
+                <button disabled class="btn btn-sm" style="margin-right: 5px; background-color: #f1f1f1;">&lt;</button>
+                <button class="btn btn-sm" style="margin-right: 5px; background-color: #004080; color: white;">1</button>
+                <button disabled class="btn btn-sm" style="background-color: #f1f1f1;">&gt;</button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Feedback Modal -->
+<div id="add-feedback-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h3>Add Feedback</h3>
+        <form action="{{ url_for('add_feedback') }}" method="post">
+            <div class="form-group">
+                <label for="student_id">Student ID:</label>
+                <input type="text" id="student_id" name="student_id" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="lab_id">Laboratory:</label>
+                <select id="lab_id" name="lab_id" class="form-control" required>
+                    <option value="">Select Laboratory</option>
+                    {% for lab in laboratories %}
+                    <option value="{{ lab.id }}">{{ lab.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="message">Feedback Message:</label>
+                <textarea id="message" name="message" class="form-control" rows="4" required></textarea>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('add-feedback-modal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit Feedback</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize DataTable
+        $('#feedback-table').DataTable({
+            "pageLength": 10,
+            "lengthMenu": [10, 25, 50, 100],
+            "order": [[2, "desc"]], // Order by date
+            "searching": true,
+            "responsive": true,
+            "language": {
+                "emptyTable": "No feedback records found"
+            }
+        });
+        
+        // Table search
+        document.getElementById('table-search').addEventListener('keyup', function() {
+            $('#feedback-table').DataTable().search(this.value).draw();
+        });
+        
+        // Date filter - include "all" option
+        const dateInput = document.getElementById('date');
+        dateInput.addEventListener('change', function() {
+            if (!this.value) {
+                this.form.action = '{{ url_for("feedback_reports") }}?lab=' + document.getElementById('lab').value + '&date=all';
+                this.form.submit();
+            }
+        });
+    });
+</script>
+{% endblock %}

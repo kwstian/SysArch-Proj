@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Sit-In Reports - CCS Admin{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <i data-feather="file-text"></i> Generate Reports
+    </div>
+    <div class="card-body">
+        <!-- Filter Form -->
+        <form action="{{ url_for('sit_in_reports') }}" method="get" class="filter-form" style="margin-bottom: 20px;">
+            <div class="row">
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label for="date_from">From Date:</label>
+                        <input type="date" id="date_from" name="date_from" class="form-control" value="{{ date_from }}">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label for="date_to">To Date:</label>
+                        <input type="date" id="date_to" name="date_to" class="form-control" value="{{ date_to }}">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label for="lab">Laboratory:</label>
+                        <select id="lab" name="lab" class="form-control">
+                            <option value="all" {% if lab_filter == 'all' %}selected{% endif %}>All Laboratories</option>
+                            {% for lab in laboratories %}
+                            <option value="{{ lab.id }}" {% if lab_filter == lab.id|string %}selected{% endif %}>{{ lab.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label for="purpose">Purpose:</label>
+                        <select id="purpose" name="purpose" class="form-control">
+                            <option value="all" {% if purpose_filter == 'all' %}selected{% endif %}>All Purposes</option>
+                            <option value="C" {% if purpose_filter == 'C' %}selected{% endif %}>C Programming</option>
+                            <option value="C#" {% if purpose_filter == 'C#' %}selected{% endif %}>C# Programming</option>
+                            <option value="Java" {% if purpose_filter == 'Java' %}selected{% endif %}>Java Programming</option>
+                            <option value="Php" {% if purpose_filter == 'Php' %}selected{% endif %}>Php Programming</option>
+                            <option value="ASP.Net" {% if purpose_filter == 'ASP.Net' %}selected{% endif %}>ASP.Net Programming</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label for="student">Student (ID/Name):</label>
+                        <input type="text" id="student" name="student" class="form-control" value="{{ student_filter }}">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <div style="display: flex; gap: 5px;">
+                            <button type="submit" class="btn btn-primary form-control">Search</button>
+                            <button type="reset" class="btn btn-secondary form-control" onclick="window.location='{{ url_for('sit_in_reports') }}'">Reset</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+        
+        <!-- Export Buttons -->
+        <div style="margin-bottom: 20px;">
+            <button class="btn btn-info export-btn" data-format="csv" data-url="{{ url_for('export_report') }}">
+                <i data-feather="file-text"></i> CSV
+            </button>
+            <button class="btn btn-success export-btn" data-format="excel" data-url="{{ url_for('export_report') }}">
+                <i data-feather="file"></i> Excel
+            </button>
+            <button class="btn btn-danger export-btn" data-format="pdf" data-url="{{ url_for('export_report') }}">
+                <i data-feather="file"></i> PDF
+            </button>
+            <button class="btn btn-secondary" onclick="window.print()">
+                <i data-feather="printer"></i> Print
+            </button>
+        </div>
+        
+        <!-- Filter display -->
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center;">
+                <label style="margin-right: 10px;">Filter:</label>
+                <input type="text" id="table-search" class="form-control" style="width: 200px;">
+            </div>
+        </div>
+        
+        <!-- Reports Table -->
+        <div class="table-responsive">
+            <table class="table table-striped" id="reports-table">
+                <thead>
+                    <tr>
+                        <th>ID Number</th>
+                        <th>Name</th>
+                        <th>Purpose</th>
+                        <th>Laboratory</th>
+                        <th>Login</th>
+                        <th>Logout</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if reports %}
+                        {% for report in reports %}
+                        <tr>
+                            <td>{{ report.student_id }}</td>
+                            <td>{{ report.name }}</td>
+                            <td>{{ report.purpose }}</td>
+                            <td>{{ report.lab_name }}</td>
+                            <td>{{ report.login_time.split()[1][:8] }}</td>
+                            <td>
+                                {% if report.logout_time %}
+                                    {{ report.logout_time.split()[1][:8] }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ report.login_time.split()[0] }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize DataTable
+        $('#reports-table').DataTable({
+            "pageLength": 10,
+            "lengthMenu": [10, 25, 50, 100],
+            "order": [[4, "desc"]], // Order by login time
+            "searching": true,
+            "responsive": true,
+            "language": {
+                "emptyTable": "No records found for the selected criteria"
+            }
+        });
+        
+        // Table search
+        document.getElementById('table-search').addEventListener('keyup', function() {
+            $('#reports-table').DataTable().search(this.value).draw();
+        });
+        
+        // Export buttons
+        document.querySelectorAll('.export-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const format = this.getAttribute('data-format');
+                const baseUrl = this.getAttribute('data-url');
+                
+                // Get current filter parameters
+                const dateFrom = document.getElementById('date_from').value;
+                const dateTo = document.getElementById('date_to').value;
+                const lab = document.getElementById('lab').value;
+                const purpose = document.getElementById('purpose').value;
+                const student = document.getElementById('student').value;
+                
+                // Build query string
+                let queryString = `?format=${format}&date_from=${dateFrom}&date_to=${dateTo}`;
+                
+                if (lab !== 'all') {
+                    queryString += `&lab=${lab}`;
+                }
+                
+                if (purpose !== 'all') {
+                    queryString += `&purpose=${purpose}`;
+                }
+                
+                if (student) {
+                    queryString += `&student=${student}`;
+                }
+                
+                // Redirect to export URL
+                window.location.href = baseUrl + queryString;
+            });
+        });
+    });
+</script>
+{% endblock %}
