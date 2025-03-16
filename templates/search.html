@@ -5,15 +5,67 @@
 {% block content %}
 <div class="card">
     <div class="card-header">
-        <i data-feather="search"></i> Search Student
+        <i data-feather="search"></i> Student Search
     </div>
     <div class="card-body">
         <form action="{{ url_for('search') }}" method="post" id="student-search-form">
-            <div class="form-group">
-                <input type="text" id="student-id-input" name="student_id" class="form-control" placeholder="Search...">
+            <div class="row">
+                <div class="col-md-9">
+                    <div class="form-group">
+                        <input type="text" id="student-id-input" name="student_id" class="form-control" 
+                            placeholder="Search by ID number, name, or program..." autocomplete="off">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i data-feather="search" style="width: 16px; height: 16px;"></i> Search
+                    </button>
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary">Search</button>
+            
+            <div class="mt-3">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="toggle-advanced-search">
+                    <i data-feather="sliders" style="width: 14px; height: 14px;"></i> Advanced Search
+                </button>
+                
+                <div id="advanced-search-options" style="display: none; margin-top: 15px; padding: 15px; border: 1px solid #eee; border-radius: 4px; background-color: #f9f9f9;">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="search-program">Program:</label>
+                                <select id="search-program" name="program" class="form-control">
+                                    <option value="">All Programs</option>
+                                    {% set conn = get_db_connection() %}
+                                    {% set programs = conn.execute('SELECT DISTINCT program FROM students ORDER BY program').fetchall() %}
+                                    {% for program in programs %}
+                                    <option value="{{ program.program }}">{{ program.program }}</option>
+                                    {% endfor %}
+                                    {% if conn %}{% do conn.close() %}{% endif %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="search-year-level">Year Level:</label>
+                                <select id="search-year-level" name="year_level" class="form-control">
+                                    <option value="">All Year Levels</option>
+                                    <option value="1">1st Year</option>
+                                    <option value="2">2nd Year</option>
+                                    <option value="3">3rd Year</option>
+                                    <option value="4">4th Year</option>
+                                    <option value="5">5th Year</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </form>
+        
+        <div id="search-results-container" class="mt-3" style="display: none;">
+            <h5>Quick Results:</h5>
+            <div id="search-results" class="list-group"></div>
+        </div>
     </div>
 </div>
 
@@ -138,6 +190,81 @@
         // Focus search input when page loads
         document.getElementById('student-id-input').focus();
         
+        // Toggle advanced search options
+        const toggleAdvancedBtn = document.getElementById('toggle-advanced-search');
+        const advancedOptions = document.getElementById('advanced-search-options');
+        
+        toggleAdvancedBtn.addEventListener('click', function() {
+            if (advancedOptions.style.display === 'none') {
+                advancedOptions.style.display = 'block';
+                toggleAdvancedBtn.innerHTML = '<i data-feather="x" style="width: 14px; height: 14px;"></i> Hide Advanced Options';
+                feather.replace();
+            } else {
+                advancedOptions.style.display = 'none';
+                toggleAdvancedBtn.innerHTML = '<i data-feather="sliders" style="width: 14px; height: 14px;"></i> Advanced Search';
+                feather.replace();
+            }
+        });
+        
+        // Handle real-time search as user types
+        const searchInput = document.getElementById('student-id-input');
+        const resultsContainer = document.getElementById('search-results-container');
+        const resultsList = document.getElementById('search-results');
+        let searchTimeout;
+        
+        searchInput.addEventListener('input', function() {
+            const query = this.value.trim();
+            
+            // Clear previous timeout
+            clearTimeout(searchTimeout);
+            
+            if (query.length < 2) {
+                resultsContainer.style.display = 'none';
+                return;
+            }
+            
+            // Set a timeout to avoid sending too many requests
+            searchTimeout = setTimeout(function() {
+                fetch(`/api/search-students?query=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Clear previous results
+                        resultsList.innerHTML = '';
+                        
+                        if (data.students && data.students.length > 0) {
+                            // Create and append result items
+                            data.students.forEach(student => {
+                                const item = document.createElement('a');
+                                item.href = `?student_id=${student.id}`;
+                                item.className = 'list-group-item list-group-item-action';
+                                item.innerHTML = `
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>${student.id}</strong> - ${student.name}
+                                            <div class="text-muted small">${student.program}, ${student.year_level} Year</div>
+                                        </div>
+                                        <span class="badge badge-primary">Select</span>
+                                    </div>
+                                `;
+                                resultsList.appendChild(item);
+                            });
+                            
+                            resultsContainer.style.display = 'block';
+                        } else {
+                            // Show "no results" message
+                            const noResults = document.createElement('div');
+                            noResults.className = 'list-group-item text-center text-muted';
+                            noResults.textContent = 'No matching students found';
+                            resultsList.appendChild(noResults);
+                            resultsContainer.style.display = 'block';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error searching students:', error);
+                    });
+            }, 300); // 300ms delay
+        });
+        
         // Trigger sit-in modal button if URL has student_id parameter
         const urlParams = new URLSearchParams(window.location.search);
         const studentId = urlParams.get('student_id');
@@ -147,6 +274,13 @@
             document.getElementById('student-id-input').value = studentId;
             document.getElementById('student-search-form').submit();
         }
+        
+        // Close search results when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!resultsContainer.contains(event.target) && event.target !== searchInput) {
+                resultsContainer.style.display = 'none';
+            }
+        });
     });
 </script>
 {% endblock %}

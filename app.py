@@ -267,17 +267,77 @@ def home():
 def search():
     if request.method == 'POST':
         student_id = request.form.get('student_id')
+        program = request.form.get('program')
+        year_level = request.form.get('year_level')
+        
+        if not student_id and not program and not year_level:
+            flash('Please enter search criteria', 'error')
+            return redirect(url_for('search'))
         
         conn = get_db_connection()
-        student = conn.execute('SELECT * FROM students WHERE id = ?', (student_id,)).fetchone()
+        
+        # Build query dynamically based on parameters
+        query = 'SELECT * FROM students WHERE 1=1'
+        params = []
+        
+        if student_id:
+            # Try both exact ID match and name/program contains search
+            query += ' AND (id = ? OR name LIKE ? OR program LIKE ?)'
+            params.extend([student_id, f'%{student_id}%', f'%{student_id}%'])
+        
+        if program:
+            query += ' AND program = ?'
+            params.append(program)
+        
+        if year_level:
+            query += ' AND year_level = ?'
+            params.append(year_level)
+        
+        # Limit to first result if there are multiple matches
+        query += ' LIMIT 1'
+        
+        student = conn.execute(query, params).fetchone()
         conn.close()
         
         if student:
-            return render_template('search.html', student=student)
+            return render_template('search.html', student=student, get_db_connection=get_db_connection)
         else:
-            flash('Student not found', 'error')
+            flash('No matching student found', 'error')
+            return render_template('search.html')
     
     return render_template('search.html')
+
+@app.route('/api/search-students', methods=['GET'])
+@login_required
+def api_search_students():
+    query = request.args.get('query', '')
+    
+    if not query or len(query) < 2:
+        return jsonify({'students': []})
+    
+    conn = get_db_connection()
+    
+    # Search by ID, name, and program with LIKE
+    students = conn.execute('''
+        SELECT id, name, program, year_level
+        FROM students
+        WHERE id LIKE ? OR name LIKE ? OR program LIKE ?
+        LIMIT 5
+    ''', (f'%{query}%', f'%{query}%', f'%{query}%')).fetchall()
+    
+    # Convert row objects to dictionaries
+    result = []
+    for student in students:
+        result.append({
+            'id': student['id'],
+            'name': student['name'],
+            'program': student['program'],
+            'year_level': student['year_level']
+        })
+    
+    conn.close()
+    
+    return jsonify({'students': result})
 
 @app.route('/student/<int:student_id>')
 @login_required
