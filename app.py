@@ -813,6 +813,44 @@ def add_announcement():
     flash('Announcement successfully added', 'success')
     return redirect(url_for('home'))
 
+@app.route('/edit-announcement/<int:announcement_id>', methods=['POST'])
+@admin_required
+def edit_announcement(announcement_id):
+    content = request.form.get('content')
+    
+    if not content:
+        flash('Announcement content cannot be empty', 'error')
+        return redirect(url_for('home'))
+    
+    conn = get_db_connection()
+    
+    # Update announcement
+    conn.execute('''
+        UPDATE announcements 
+        SET content = ?
+        WHERE id = ?
+    ''', (content, announcement_id))
+    
+    conn.commit()
+    conn.close()
+    
+    flash('Announcement successfully updated', 'success')
+    return redirect(url_for('home'))
+
+@app.route('/delete-announcement/<int:announcement_id>')
+@admin_required
+def delete_announcement(announcement_id):
+    conn = get_db_connection()
+    
+    # Delete announcement
+    conn.execute('DELETE FROM announcements WHERE id = ?', (announcement_id,))
+    
+    conn.commit()
+    conn.close()
+    
+    flash('Announcement successfully deleted', 'success')
+    return redirect(url_for('home'))
+
 # Main entry point
 if __name__ == '__main__':
     # Initialize database

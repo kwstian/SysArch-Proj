@@ -347,6 +347,7 @@ header h1 {
     margin-bottom: 8px;
     font-weight: bold;
     color: var(--primary-color);
+    flex-wrap: wrap;
 }
 
 .announcement-date {
@@ -354,9 +355,31 @@ header h1 {
     font-size: 0.9rem;
 }
 
+.announcement-actions {
+    margin-left: auto;
+}
+
 .announcement-content {
     color: #333;
     line-height: 1.5;
+    padding: 8px 0;
+}
+
+.announcement-edit-form {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.edit-announcement-btn, .delete-announcement-btn {
+    padding: 2px 8px;
+    margin-left: 5px;
+}
+
+.edit-announcement-btn i, .delete-announcement-btn i {
+    vertical-align: middle;
+    margin-right: 3px;
 }
 
 /* Login and Registration styles */
