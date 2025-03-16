@@ -35,12 +35,9 @@
                                 <label for="search-program">Program:</label>
                                 <select id="search-program" name="program" class="form-control">
                                     <option value="">All Programs</option>
-                                    {% set conn = get_db_connection() %}
-                                    {% set programs = conn.execute('SELECT DISTINCT program FROM students ORDER BY program').fetchall() %}
                                     {% for program in programs %}
                                     <option value="{{ program.program }}">{{ program.program }}</option>
                                     {% endfor %}
-                                    {{ conn.close() }}
                                 </select>
                             </div>
                         </div>
@@ -113,8 +110,6 @@
                     </div>
                     <div class="card-body">
                         <ul style="padding-left: 20px;">
-                            {% set conn = get_db_connection() %}
-                            {% set recent_activity = conn.execute('SELECT purpose, lab_id, login_time, logout_time FROM sit_ins WHERE student_id = ? ORDER BY login_time DESC LIMIT 5', (student.id,)).fetchall() %}
                             {% if recent_activity %}
                                 {% for activity in recent_activity %}
                                 <li>
@@ -131,7 +126,6 @@
                             {% else %}
                                 <li>No recent activity</li>
                             {% endif %}
-                            {{ conn.close() }}
                         </ul>
                     </div>
                 </div>

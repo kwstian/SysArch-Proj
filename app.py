@@ -265,6 +265,27 @@ def home():
 @app.route('/search', methods=['GET', 'POST'])
 @login_required
 def search():
+    # Get data for dropdowns
+    conn = get_db_connection()
+    programs = conn.execute('SELECT DISTINCT program FROM students ORDER BY program').fetchall()
+    laboratories = conn.execute('SELECT * FROM laboratories').fetchall()
+    
+    student = None
+    recent_activity = []
+    
+    # Check for GET parameter first
+    student_id_param = request.args.get('student_id')
+    if student_id_param:
+        student = conn.execute('SELECT * FROM students WHERE id = ?', (student_id_param,)).fetchone()
+        if student:
+            recent_activity = conn.execute('''
+                SELECT purpose, lab_id, login_time, logout_time 
+                FROM sit_ins 
+                WHERE student_id = ? 
+                ORDER BY login_time DESC LIMIT 5
+            ''', (student_id_param,)).fetchall()
+    
+    # Handle POST search
     if request.method == 'POST':
         student_id = request.form.get('student_id')
         program = request.form.get('program')
@@ -272,9 +293,8 @@ def search():
         
         if not student_id and not program and not year_level:
             flash('Please enter search criteria', 'error')
+            conn.close()
             return redirect(url_for('search'))
-        
-        conn = get_db_connection()
         
         # Build query dynamically based on parameters
         query = 'SELECT * FROM students WHERE 1=1'
@@ -297,15 +317,24 @@ def search():
         query += ' LIMIT 1'
         
         student = conn.execute(query, params).fetchone()
-        conn.close()
         
         if student:
-            return render_template('search.html', student=student, get_db_connection=get_db_connection)
+            recent_activity = conn.execute('''
+                SELECT purpose, lab_id, login_time, logout_time 
+                FROM sit_ins 
+                WHERE student_id = ? 
+                ORDER BY login_time DESC LIMIT 5
+            ''', (student['id'],)).fetchall()
         else:
             flash('No matching student found', 'error')
-            return render_template('search.html')
     
-    return render_template('search.html')
+    conn.close()
+    
+    return render_template('search.html', 
+                          student=student, 
+                          programs=programs,
+                          laboratories=laboratories,
+                          recent_activity=recent_activity)
 
 @app.route('/api/search-students', methods=['GET'])
 @login_required
