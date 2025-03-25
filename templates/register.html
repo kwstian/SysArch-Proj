@@ -11,9 +11,9 @@
         <div class="auth-logo">
             <h2 style="color: #004080;">CCS</h2>
         </div>
-        
+       
         <h2 class="auth-title">Create an Account</h2>
-        
+       
         <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -24,47 +24,123 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
-        
+       
         <form action="{{ url_for('register') }}" method="post" id="register-form">
+            <div class="form-group">
+                <label for="id_number" class="form-label">ID Number</label>
+                <input type="text" id="id_number" name="id_number" class="form-control" required pattern="\d{8}" 
+                       title="ID Number must be 8 digits">
+            </div>
+
+            <div class="form-group">
+                <label for="lastname" class="form-label">Last Name</label>
+                <input type="text" id="lastname" name="lastname" class="form-control" required>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="firstname" class="form-label">First Name</label>
+                    <input type="text" id="firstname" name="firstname" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="middlename" class="form-label">Middle Name</label>
+                    <input type="text" id="middlename" name="middlename" class="form-control">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="course" class="form-label">Course</label>
+                    <select id="course" name="course" class="form-control" required>
+                        <option value="">Select Course</option>
+                        <option value="BSCS">BS Computer Science</option>
+                        <option value="BSIT">BS Information Technology</option>
+                        <option value="BSIS">BS Information Systems</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="level" class="form-label">Level</label>
+                    <select id="level" name="level" class="form-control" required>
+                        <option value="">Select Level</option>
+                        <option value="1">1st Year</option>
+                        <option value="2">2nd Year</option>
+                        <option value="3">3rd Year</option>
+                        <option value="4">4th Year</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="email" class="form-label">Email Address</label>
+                <input type="email" id="email" name="email" class="form-control" required>
+            </div>
+
             <div class="form-group">
                 <label for="username" class="form-label">Username</label>
                 <input type="text" id="username" name="username" class="form-control" required>
             </div>
-            
+           
             <div class="form-group">
                 <label for="password" class="form-label">Password</label>
                 <input type="password" id="password" name="password" class="form-control" required minlength="6">
                 <small style="color: #777;">Password must be at least 6 characters long</small>
             </div>
-            
+           
             <div class="form-group">
                 <label for="confirm_password" class="form-label">Confirm Password</label>
                 <input type="password" id="confirm_password" name="confirm_password" class="form-control" required>
             </div>
-            
+           
             <div class="form-group">
                 <button type="submit" class="btn btn-primary" style="width: 100%;">Register</button>
             </div>
         </form>
-        
+       
         <div class="auth-footer">
             Already have an account? <a href="{{ url_for('login') }}">Login</a>
         </div>
     </div>
-    
+   
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script>
         // Additional validation for registration form
         document.getElementById('register-form').addEventListener('submit', function(event) {
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirm_password').value;
-            
+            const idNumber = document.getElementById('id_number').value;
+           
+            // Password match validation
             if (password !== confirmPassword) {
                 event.preventDefault();
                 alert('Passwords do not match');
                 document.getElementById('confirm_password').focus();
+                return;
+            }
+
+            // ID Number validation (8 digits)
+            if (!/^\d{8}$/.test(idNumber)) {
+                event.preventDefault();
+                alert('ID Number must be exactly 8 digits');
+                document.getElementById('id_number').focus();
+                return;
             }
         });
     </script>
+
+    <style>
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+        .form-row .form-group {
+            flex: 1;
+        }
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
 </body>
 </html>
